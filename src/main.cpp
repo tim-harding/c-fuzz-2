@@ -26,13 +26,75 @@ int main(int argc, char** argv) {
 	glfwSwapInterval(1);
 
 	if (!gladLoadGL()) {
-		printf("Failed to load OpenGL.");
+		printf("Failed to load OpenGL.\n");
 		return -1;
 	}
 
 	glViewport(0, 0, WIDTH, HEIGHT);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+	FT_Library ft;
+	int success = FT_Init_FreeType(&ft);
+	if (success != 0) {
+		printf("Failed to initialize FreeType\n");
+		return -1;
+	}
+
+	FT_Face face;
+	success = FT_New_Face(ft, "fonts/Cascadia.ttf", 0, &face);
+	if (success != 0) {
+		printf("Failed to load font\n");
+		return -1;
+	}
+
+	// Width calculated dynamically
+	FT_Set_Pixel_Sizes(face, 0, 48);
+
+	// Most textures' dimensions are a multiple of four,
+	// but we want to loosen that restriction for the moment.
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	Character* characters = (Character*)malloc(128 * sizeof(Character));
+	for (GLubyte i = 0; i < 128; i++) {
+		// Calls FT_Render_Glyph after font is loaded
+		success = FT_Load_Char(face, i, FT_LOAD_RENDER);
+		if (success != 0) {
+			printf("Failed to load glyph: %c", i);
+			return -1;
+		}
+
+		GLuint tex;
+		glGenTextures(1, &tex);
+		glBindTexture(GL_TEXTURE_2D, tex);
+
+		FT_GlyphSlot glyph = face->glyph;
+		Character* c = &characters[i];
+		c->tex_id = tex;
+		c->size = glm::ivec2(glyph->bitmap.width, glyph->bitmap.rows);
+		c->bearing = glm::ivec2(glyph->bitmap_left, glyph->bitmap_top);
+		c->advance = glyph->advance.x;
+
+		glTexImage2D(
+			GL_TEXTURE_2D,
+			0,
+			GL_RED,
+			c->size.x,
+			c->size.y,
+			0,
+			GL_RED,
+			GL_UNSIGNED_BYTE,
+			glyph->bitmap.buffer
+		);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
+
+	FT_Done_Face(face);
+	FT_Done_FreeType(ft);
+	
 	while (!glfwWindowShouldClose(window)) {
 		process_input(window);
 
@@ -42,6 +104,8 @@ int main(int argc, char** argv) {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+
+	free(characters);
 
 	glfwDestroyWindow(window);
 	glfwTerminate();
@@ -61,5 +125,5 @@ void process_input(GLFWwindow *window) {
 }
 
 void glfw_error_callback(int error, const char* desc) {
-	printf("Glfw error %s", desc);
+	printf("Glfw error %s\n", desc);
 }
