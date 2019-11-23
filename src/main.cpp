@@ -13,7 +13,36 @@ int main(int argc, char** argv) {
 	if (!characters) {
 		return -1;
 	}
-	
+
+	const int MAX_CWD_SIZE = 256;
+	char* cwd = (char*)malloc(sizeof(char) * MAX_CWD_SIZE);
+	_getcwd(cwd, MAX_CWD_SIZE);
+
+	DWORD filter = FILE_NOTIFY_CHANGE_FILE_NAME |
+		FILE_NOTIFY_CHANGE_DIR_NAME |
+		FILE_NOTIFY_CHANGE_ATTRIBUTES |
+		FILE_NOTIFY_CHANGE_SIZE |
+		FILE_NOTIFY_CHANGE_LAST_WRITE |
+		FILE_NOTIFY_CHANGE_SECURITY;
+	HANDLE change_handle = FindFirstChangeNotificationA(cwd, true, filter);
+
+	if (change_handle == INVALID_HANDLE_VALUE) {
+		printf("Could not get cwd subtree change notification handle.\n");
+	} else {
+		DWORD event = WaitForMultipleObjects(
+			1,
+			&change_handle,
+			false,
+			INFINITE
+		);
+
+		if (event == WAIT_OBJECT_0) {
+			// Use find next change notification to continue
+			// receiving notifications
+			printf("Directory changed!");
+		}
+	}
+
 	while (!glfwWindowShouldClose(window)) {
 		process_input(window);
 
@@ -24,14 +53,17 @@ int main(int argc, char** argv) {
 		glfwPollEvents();
 	}
 
+	FindCloseChangeNotification(change_handle);
 	free(characters);
 	glfwDestroyWindow(window);
 	glfwTerminate();
+
 	return 0;
 }
 
 
-GLFWwindow* initialize_window() {
+GLFWwindow* initialize_window()
+{
 	glfwSetErrorCallback(glfw_error_callback);
 	if (!glfwInit()) {
 		printf("Failed to initialize GLFW");
@@ -42,7 +74,7 @@ GLFWwindow* initialize_window() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Compositor", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Compositor", 0, 0);
 	if (!window) {
 		printf("Failed to create window.");
 		glfwTerminate();
@@ -54,9 +86,6 @@ GLFWwindow* initialize_window() {
 	// vsync
 	glfwSwapInterval(1);
 
-	glViewport(0, 0, WIDTH, HEIGHT);
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
 	if (!gladLoadGL()) {
 		printf("Failed to load OpenGL.\n");
 		glfwDestroyWindow(window);
@@ -64,7 +93,10 @@ GLFWwindow* initialize_window() {
 		return nullptr;
 	}
 
-	return 0;
+	glViewport(0, 0, WIDTH, HEIGHT);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+	return window;
 }
 
 
