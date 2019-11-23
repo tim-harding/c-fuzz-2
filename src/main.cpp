@@ -33,25 +33,16 @@ int main(int argc, char** argv) {
 	glViewport(0, 0, WIDTH, HEIGHT);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-
-	ImGui::StyleColorsDark();
-
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init();
-
 	while (!glfwWindowShouldClose(window)) {
 		process_input(window);
-		render_frame(window);
+
+		glClearColor(0.2f, 0.3f, 0.3f, 1.f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
 	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
@@ -68,27 +59,6 @@ void process_input(GLFWwindow *window) {
 		glfwSetWindowShouldClose(window, true);
 	}
 }
-
-
-void render_frame(GLFWwindow* window) {
-	glClearColor(0.2f, 0.3f, 0.3f, 1.f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
-
-	// Here is where you would render whatever
-	// non-UI stuff you need
-
-	ImGui::Begin("Demo window");
-	ImGui::Button("Hello!");
-	ImGui::End();
-
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
 
 void glfw_error_callback(int error, const char* desc) {
 	printf("Glfw error %s", desc);
