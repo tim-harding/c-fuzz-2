@@ -14,7 +14,9 @@ struct Character {
 	GLuint advance;
 };
 
+GLFWwindow* initialize_window();
 void glfw_error_callback(int error, const char* desc);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void process_input(GLFWwindow *window);
 void render_frame(GLFWwindow* window);
+Character* create_font_textures(char*);

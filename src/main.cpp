@@ -4,9 +4,38 @@ const int WIDTH = 800;
 const int HEIGHT = 600;
 
 int main(int argc, char** argv) {
+	GLFWwindow* window = initialize_window();
+	if (!window) {
+		return -1;
+	}
+
+	Character* characters = create_font_textures("fonts/Cascadia.ttf");
+	if (!characters) {
+		return -1;
+	}
+	
+	while (!glfwWindowShouldClose(window)) {
+		process_input(window);
+
+		glClearColor(0.2f, 0.3f, 0.3f, 1.f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+	}
+
+	free(characters);
+	glfwDestroyWindow(window);
+	glfwTerminate();
+	return 0;
+}
+
+
+GLFWwindow* initialize_window() {
 	glfwSetErrorCallback(glfw_error_callback);
 	if (!glfwInit()) {
-		return -1;
+		printf("Failed to initialize GLFW");
+		return nullptr;
 	}
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -17,7 +46,7 @@ int main(int argc, char** argv) {
 	if (!window) {
 		printf("Failed to create window.");
 		glfwTerminate();
-		return -1;
+		return nullptr;
 	}
 
 	glfwMakeContextCurrent(window);
@@ -25,26 +54,49 @@ int main(int argc, char** argv) {
 	// vsync
 	glfwSwapInterval(1);
 
-	if (!gladLoadGL()) {
-		printf("Failed to load OpenGL.\n");
-		return -1;
-	}
-
 	glViewport(0, 0, WIDTH, HEIGHT);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	FT_Library ft;
-	int success = FT_Init_FreeType(&ft);
-	if (success != 0) {
-		printf("Failed to initialize FreeType\n");
-		return -1;
+	if (!gladLoadGL()) {
+		printf("Failed to load OpenGL.\n");
+		glfwDestroyWindow(window);
+		glfwTerminate();
+		return nullptr;
 	}
 
+	return 0;
+}
+
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+	glViewport(0, 0, width, height);
+}
+
+
+void process_input(GLFWwindow *window) {
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+		glfwSetWindowShouldClose(window, true);
+	}
+}
+
+void glfw_error_callback(int error, const char* desc) {
+	printf("Glfw error %s\n", desc);
+}
+
+Character* create_font_textures(char* font_file) {
+	FT_Library ft;
+	int failure = FT_Init_FreeType(&ft);
+	if (failure) {
+		printf("Failed to initialize FreeType\n");
+		return nullptr;
+	}
+	
 	FT_Face face;
-	success = FT_New_Face(ft, "fonts/Cascadia.ttf", 0, &face);
-	if (success != 0) {
+	failure = FT_New_Face(ft, font_file, 0, &face);
+	if (failure) {
 		printf("Failed to load font\n");
-		return -1;
+		FT_Done_FreeType(ft);
+		return nullptr;
 	}
 
 	// Width calculated dynamically
@@ -57,10 +109,13 @@ int main(int argc, char** argv) {
 	Character* characters = (Character*)malloc(128 * sizeof(Character));
 	for (GLubyte i = 0; i < 128; i++) {
 		// Calls FT_Render_Glyph after font is loaded
-		success = FT_Load_Char(face, i, FT_LOAD_RENDER);
-		if (success != 0) {
+		failure = FT_Load_Char(face, i, FT_LOAD_RENDER);
+		if (failure != 0) {
 			printf("Failed to load glyph: %c", i);
-			return -1;
+			FT_Done_Face(face);
+			FT_Done_FreeType(ft);
+			free(characters);
+			return nullptr;
 		}
 
 		GLuint tex;
@@ -94,36 +149,6 @@ int main(int argc, char** argv) {
 
 	FT_Done_Face(face);
 	FT_Done_FreeType(ft);
-	
-	while (!glfwWindowShouldClose(window)) {
-		process_input(window);
 
-		glClearColor(0.2f, 0.3f, 0.3f, 1.f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-	}
-
-	free(characters);
-
-	glfwDestroyWindow(window);
-	glfwTerminate();
-	return 0;
-}
-
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-	glViewport(0, 0, width, height);
-}
-
-
-void process_input(GLFWwindow *window) {
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-		glfwSetWindowShouldClose(window, true);
-	}
-}
-
-void glfw_error_callback(int error, const char* desc) {
-	printf("Glfw error %s\n", desc);
+	return characters;
 }
