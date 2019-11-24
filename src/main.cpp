@@ -21,15 +21,18 @@ int main(int argc, char** argv) {
 	ShaderID frg = shader_from_source(shader_manager, "shaders/tri_test_frg.glsl", GL_FRAGMENT_SHADER);
 	ShaderID program = link_program(shader_manager, vtx, frg);
 
-	GLuint vao = create_triangle_vao();
-
+	MeshManager* mesh_manager = init_mesh_manager();
+	MeshID mesh = next_mesh(mesh_manager);
+	populate_quad_mesh(mesh_manager, mesh);
+	MeshDrawInfo info = prepare_mesh_for_drawing(mesh_manager, mesh);
+	
 	while (!should_close(window)) {
 		begin_frame(window);
 
 		hotreload_all_shaders(shader_manager);
 		glClearColor(0.2f, 0.3f, 0.3f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT);
-		render_triangle(handle_for_program(shader_manager, program), vao);
+		draw_mesh(info, handle_for_program(shader_manager, program));
 
 		end_frame(window);
 	}
@@ -37,6 +40,7 @@ int main(int argc, char** argv) {
 	free_shader_manager(shader_manager);
 	free_window(window);
 	free_font_manager(font_manager);
+	free_mesh_manager(mesh_manager);
 
 	return 0;
 }
