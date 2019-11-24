@@ -14,38 +14,59 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-	const int MAX_CWD_SIZE = 256;
+	int MAX_CWD_SIZE = 256;
 	char* cwd = (char*)malloc(sizeof(char) * MAX_CWD_SIZE);
 	_getcwd(cwd, MAX_CWD_SIZE);
 
+	printf("CWD: %s\n", cwd);
+
+	HANDLE cwd_handle = CreateFileA(
+		cwd, 
+		GENERIC_READ, 
+		// Allow all operations by other users of the file.
+		// We want to watch changes, not block access.
+		FILE_SHARE_READ | FILE_SHARE_WRITE, 
+		// Default security
+		nullptr, 
+		OPEN_EXISTING,
+		// Used to create a handle for ReadDirectoryChangesW
+		FILE_FLAG_BACKUP_SEMANTICS,
+		// Ignored when opening existing
+		nullptr
+	);
+
+	if (cwd_handle == INVALID_HANDLE_VALUE) {
+		printf("Could not get a handle to the working directory.");
+		return -1;
+	}
+
 	DWORD filter = FILE_NOTIFY_CHANGE_FILE_NAME |
 		FILE_NOTIFY_CHANGE_DIR_NAME |
-		FILE_NOTIFY_CHANGE_ATTRIBUTES |
-		FILE_NOTIFY_CHANGE_SIZE |
-		FILE_NOTIFY_CHANGE_LAST_WRITE |
-		FILE_NOTIFY_CHANGE_SECURITY;
-	HANDLE change_handle = FindFirstChangeNotificationA(cwd, true, filter);
+		FILE_NOTIFY_CHANGE_LAST_WRITE;
+	DWORD buffer_size = 12 * sizeof(FILE_NOTIFY_INFORMATION);
+	LPVOID buffer = malloc(buffer_size);
+	LPDWORD bytes_returned = nullptr;
+	bool success = ReadDirectoryChangesW(
+		cwd_handle,
+		buffer,
+		buffer_size,
+		true,
+		filter,
+		bytes_returned,
+		// Last parameters relevant for async calls
+		nullptr,
+		nullptr
+	);
 
-	if (change_handle == INVALID_HANDLE_VALUE) {
-		printf("Could not get cwd subtree change notification handle.\n");
+	if (success) {
+		printf("%d\n", *bytes_returned);
 	} else {
-		DWORD event = WaitForMultipleObjects(
-			1,
-			&change_handle,
-			false,
-			INFINITE
-		);
-
-		if (event == WAIT_OBJECT_0) {
-			// Use find next change notification to continue
-			// receiving notifications
-			printf("Directory changed!");
-		}
+		printf("Could not read directory changes.\n");
 	}
 
 	while (!glfwWindowShouldClose(window)) {
 		process_input(window);
-
+		
 		glClearColor(0.2f, 0.3f, 0.3f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -53,7 +74,7 @@ int main(int argc, char** argv) {
 		glfwPollEvents();
 	}
 
-	FindCloseChangeNotification(change_handle);
+	free(buffer);
 	free(characters);
 	glfwDestroyWindow(window);
 	glfwTerminate();
