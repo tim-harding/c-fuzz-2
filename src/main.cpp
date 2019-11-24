@@ -30,6 +30,7 @@ int main(int argc, char** argv) {
 		glfwPollEvents();
 	}
 
+	free_shader_manager(shader_manager);
 	free(characters);
 	glfwDestroyWindow(window);
 	glfwTerminate();
