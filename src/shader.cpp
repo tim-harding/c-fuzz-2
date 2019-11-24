@@ -1,7 +1,6 @@
-#include "shader_manager.h"
+#include "shader.h"
 
 
-const int MAX_BUFFERS = 8;
 const int BUFFER_SIZE = 1 << 16;
 const int MAX_SHADERS = 255;
 const int MAX_PROGRAMS = 255;
@@ -14,10 +13,10 @@ struct Shader {
     bool valid;
 	GLuint handle;
     Timestamp timestamp;
-    char* filename;
+    const char* filename;
 
     uint8_t program_count;
-    ProgramID* programs;
+    ShaderID* programs;
 };
 
 
@@ -35,7 +34,7 @@ struct ShaderManager {
 };
 
 
-Timestamp file_timestamp(char* filename) {
+Timestamp file_timestamp(const char* filename) {
 	Timestamp timestamp;
 	struct __stat64 file_info;
 	int success = _stat64(filename, &file_info);
@@ -46,7 +45,7 @@ Timestamp file_timestamp(char* filename) {
 }
 
 
-GLuint handle_for_program(ShaderManager* manager, ProgramID id) {
+GLuint handle_for_program(ShaderManager* manager, ShaderID id) {
     return manager->programs[id].handle;
 }
 
@@ -64,34 +63,26 @@ void gl_relink_program(Program& program) {
 }
 
 
-bool source_shader(GLuint shader, char* filename) {
+bool source_shader(GLuint shader, const char* filename) {
 	FILE* file = fopen(filename, "r");
 	if (!file) {
-		printf("Could not open shader file: %s", filename);
+		printf("Could not open shader file: %s\n", filename);
 		return false;
 	}
 
-	char** buffers = (char**)malloc(MAX_BUFFERS * sizeof(char*));
-	int buffer_count = 0;
-	for (; buffer_count < MAX_BUFFERS; buffer_count++) {
-		buffers[buffer_count] = (char*)malloc(BUFFER_SIZE * sizeof(char));
-		size_t bytes_read = fread(buffers[buffer_count], sizeof(char), BUFFER_SIZE, file);
-		if (bytes_read < BUFFER_SIZE) {
-            buffers[buffer_count][bytes_read] = '\0';
-            buffer_count++;
-			break;
-		}
+	char* buffer = (char*)malloc(BUFFER_SIZE * sizeof(char*));
+	size_t bytes_read = fread(buffer, sizeof(char), BUFFER_SIZE, file);
+	if (bytes_read == BUFFER_SIZE) {
+		printf("Shader program requires a larger text buffer.");
+		return false;
 	}
 	fclose(file);
-
-	glShaderSource(shader, buffer_count, buffers, nullptr);
-
-	for (int i = 0; i < buffer_count; i++) {
-		free(buffers[i]);
-	}
-	free(buffers);
-
+	// fread does not null-terminate the string.
+	buffer[bytes_read] = '\0';
+	glShaderSource(shader, 1, &buffer, nullptr);
+	free(buffer);
 	glCompileShader(shader);
+
 	int success;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 	if (!success) {
@@ -113,14 +104,14 @@ void attempt_shader_hotreload(ShaderManager* manager, Shader& shader) {
 
 	if (shader.valid) {
 		for (int i = 0, count = shader.program_count; i < count; i++) {
-            ProgramID id = shader.programs[i];
+            ShaderID id = shader.programs[i];
 			gl_relink_program(manager->programs[id]);
 		}
 	}
 }
 
 
-void init_program(ShaderManager* manager, ProgramID id, ShaderID vtx_id, ShaderID frg_id) {
+void init_program(ShaderManager* manager, ShaderID id, ShaderID vtx_id, ShaderID frg_id) {
     Shader& vtx = manager->shaders[vtx_id];
     Shader& frg = manager->shaders[frg_id];
     Program& program = manager->programs[id];
@@ -137,18 +128,18 @@ void init_program(ShaderManager* manager, ProgramID id, ShaderID vtx_id, ShaderI
 }
 
 
-void init_shader(Shader& out, char* filename, GLenum kind) {
+void init_shader(Shader& out, const char* filename, GLenum kind) {
 	GLuint shader = glCreateShader(kind);
 	out.valid = source_shader(shader, filename);
 	out.timestamp = file_timestamp(filename);
 	out.handle = shader;
 	out.filename = filename;
 	out.program_count = 0;
-	out.programs = (ProgramID*)malloc(MAX_SHADERS * sizeof(ProgramID));
+	out.programs = (ShaderID*)malloc(MAX_SHADERS * sizeof(ShaderID));
 }
 
 
-ShaderManager* alloc_and_init_shader_manager() {
+ShaderManager* init_shader_manager() {
     ShaderManager* manager = (ShaderManager*)malloc(sizeof(ShaderManager));
     manager->program_count = 0;
     manager->shader_count = 0;
@@ -156,9 +147,10 @@ ShaderManager* alloc_and_init_shader_manager() {
 }
 
 
-ShaderID shader_from_source(ShaderManager* manager, char* filename, GLuint kind) {
+// TODO: Fails if more than MAX_SHADERS are used, have some
+// sort of error return. 
+ShaderID shader_from_source(ShaderManager* manager, const char* filename, GLuint kind) {
     uint8_t id = manager->shader_count;
-    assert(id < MAX_SHADERS);
     Shader& shader = manager->shaders[id];
     init_shader(shader, filename, kind);
     manager->shader_count++;
@@ -166,9 +158,9 @@ ShaderID shader_from_source(ShaderManager* manager, char* filename, GLuint kind)
 }
 
 
-ProgramID link_program(ShaderManager* manager, ShaderID vtx_id, ShaderID frg_id) {
+// TODO: See not note on shader_from_source
+ShaderID link_program(ShaderManager* manager, ShaderID vtx_id, ShaderID frg_id) {
     uint8_t id = manager->program_count;
-    assert(id < MAX_PROGRAMS);
     Program& program = manager->programs[id];
     init_program(manager, id, vtx_id, frg_id);
     manager->program_count++;
@@ -189,7 +181,8 @@ void free_shader_manager(ShaderManager* manager) {
         Shader shader = manager->shaders[i];
         glDeleteShader(shader.handle);
         free(shader.programs);
-        free(shader.filename);
+		// `filename` is a pointer but we don't free it because
+		// it isn't dynamically allocated. 
     }
     
     for (int i = 0, program_count = manager->program_count; i < program_count; i++) {
