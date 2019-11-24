@@ -1,6 +1,7 @@
 #include "font.h"
 #include "shader.h"
 #include "window.h"
+#include "rendering.h"
 
 
 int main(int argc, char** argv) {
@@ -16,9 +17,11 @@ int main(int argc, char** argv) {
 	}
 
 	ShaderManager* shader_manager = init_shader_manager();
-	ShaderID vtx = shader_from_source(shader_manager, "shaders/text_vtx.glsl", GL_VERTEX_SHADER);
-	ShaderID frg = shader_from_source(shader_manager, "shaders/text_frg.glsl", GL_FRAGMENT_SHADER);
+	ShaderID vtx = shader_from_source(shader_manager, "shaders/tri_test_vtx.glsl", GL_VERTEX_SHADER);
+	ShaderID frg = shader_from_source(shader_manager, "shaders/tri_test_frg.glsl", GL_FRAGMENT_SHADER);
 	ShaderID program = link_program(shader_manager, vtx, frg);
+
+	GLuint vao = create_triangle_vao();
 
 	while (!should_close(window)) {
 		begin_frame(window);
@@ -26,6 +29,7 @@ int main(int argc, char** argv) {
 		hotreload_all_shaders(shader_manager);
 		glClearColor(0.2f, 0.3f, 0.3f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT);
+		render_triangle(handle_for_program(shader_manager, program), vao);
 
 		end_frame(window);
 	}
