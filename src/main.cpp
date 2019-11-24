@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
 	ShaderManager* shader_manager = alloc_and_init_shader_manager();
 	ShaderID vtx = shader_from_source(shader_manager, "shaders/text_vtx.glsl", GL_VERTEX_SHADER);
 	ShaderID frg = shader_from_source(shader_manager, "shaders/text_frg.glsl", GL_FRAGMENT_SHADER);
-	ProgramID program = link_shader_program(shader_manager, vtx, frg);
+	ProgramID program = link_program(shader_manager, vtx, frg);
 
 	while (!glfwWindowShouldClose(window)) {
 		process_input(window);
