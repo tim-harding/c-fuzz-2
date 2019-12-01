@@ -1,16 +1,12 @@
-#include <stdint.h>
-#include <glad/glad.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
+#pragma once
 
-using FontID = uint8_t;
-struct FontSuccess {
-    FontID id;
-    bool ok;
-};
+const char ASCII_START = 32; // Space
+const char ASCII_END = 126;  // ~
+const char ASCII_CHAR_COUNT = ASCII_END - ASCII_START;
 
-struct FontManager;
+typedef struct Fonts Fonts;
+typedef unsigned int FontHandle;
 
-FontManager* init_font_manager();
-FontSuccess add_font(FontManager* manager, char* filename);
-void free_font_manager(FontManager* manager);
+Fonts* init_fonts();
+FontHandle create_font(Fonts* manager, char* font_file, int point_size);
+unsigned int tex_handle_for_font(Fonts* manager, FontHandle handle);
