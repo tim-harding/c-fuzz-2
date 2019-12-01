@@ -41,10 +41,11 @@ MeshID next_mesh(MeshManager* manager) {
 
 void populate_quad_mesh(MeshManager* manager, MeshID id) {
     float vertices[] = {
-         0.5f,  0.5f,
-         0.5f, -0.5f,
-        -0.5f, -0.5f, 
-        -0.5f,  0.5f
+      // World coords      UV coords
+         0.5f,  0.5f,      1.f, 1.f,
+         0.5f, -0.5f,      1.f, 0.f,
+        -0.5f, -0.5f,      0.f, 0.f,
+        -0.5f,  0.5f,      0.f, 1.f
     };
 
     GLuint indices[] = {
@@ -89,8 +90,13 @@ MeshDrawInfo prepare_mesh_for_drawing(MeshManager* manager, MeshID id) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.index_count * sizeof(GLuint), mesh.indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, false, 2 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(0); // should use glgetattriblocation
+	// should use glgetattriblocation
+	const int pos_a = 0;
+	const int uv_a  = 1;
+    glVertexAttribPointer(pos_a, 2, GL_FLOAT, false, 4 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(pos_a); 
+    glVertexAttribPointer(uv_a, 2, GL_FLOAT, false, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(uv_a);
 
     MeshDrawInfo info;
     info.vao = vao;

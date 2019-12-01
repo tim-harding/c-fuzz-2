@@ -4,6 +4,16 @@
 #include "rendering.h"
 
 
+// TODO: Adding proper UVs to our texture should probably be the next
+// step for this. Using NDC coordinates won't work for much longer. That,
+// and we're also going to want a temp allocator for vertex data, since
+// we'll be changing it so often with text rendering. 
+//
+// It will also be good to improve the shader system so we can fetch
+// uniform and attribute locations by name, as well as prepare materials
+// based on those shaders. 
+
+
 int main(int argc, char** argv) {
 	Window window = init_window();
 	if (!window) {
