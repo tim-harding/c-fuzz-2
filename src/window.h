@@ -9,7 +9,7 @@ namespace Window {
 	// that we cast to the correct type in the implementation.
 	using Handle = void*;
 
-	Handle init_window();
+	Handle init();
 	void free(Handle window);
 	bool should_close(Handle window);
 	void begin_frame(Handle window);

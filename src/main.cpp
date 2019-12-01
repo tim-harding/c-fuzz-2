@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
 	gb_arena_init_from_memory(&arena, block, ALLOC_SIZE);
 	gbAllocator allocator = gb_arena_allocator(&arena);
 
-	Window::Handle window = Window::init_window();
+	Window::Handle window = Window::init();
 	if (!window) {
 		return -1;
 	}

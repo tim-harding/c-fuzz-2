@@ -22,7 +22,7 @@ namespace Window {
 	}
 
 
-	Handle init_window() {
+	Handle init() {
 		glfwSetErrorCallback(glfw_error_callback);
 		if (!glfwInit()) {
 			printf("Failed to initialize GLFW");
