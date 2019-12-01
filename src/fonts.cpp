@@ -1,4 +1,4 @@
-#include "font.h"
+#include "fonts.h"
 #include "glad/glad.h"
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -24,19 +24,18 @@ namespace Fonts {
 		unsigned char* data;
 	};
 
-	struct FontConstructionInfo {
+	struct ConstructInfo {
 		Font* font;
 		CharacterBuffer buffers[ASCII_CHAR_COUNT];
 	};
 
-	FontConstructionInfo* create_font_construction_info() {
-		FontConstructionInfo* info = (FontConstructionInfo*)malloc(sizeof(FontConstructionInfo));
-		Font* font = (Font*)malloc(sizeof(Font));
+	ConstructInfo* create_font_construction_info(Font* font) {
+		ConstructInfo* info = (ConstructInfo*)malloc(sizeof(ConstructInfo));
 		info->font = font;
 		return info;
 	}
 
-	FontConstructionInfo* create_font_textures(char* font_file, int point_size) {
+	ConstructInfo* create_font_textures(Font* font, char* font_file, int point_size) {
 		FT_Library ft;
 		int failure = FT_Init_FreeType(&ft);
 		if (failure) {
@@ -55,7 +54,7 @@ namespace Fonts {
 		// Width calculated dynamically
 		FT_Set_Pixel_Sizes(face, 0, point_size);
 
-		FontConstructionInfo* info = create_font_construction_info();
+		ConstructInfo* info = create_font_construction_info(font);
 		for (int i = 0; i < ASCII_CHAR_COUNT; i++) {
 			char ascii = i + ASCII_START;
 			failure = FT_Load_Char(face, ascii, FT_LOAD_RENDER);
@@ -75,7 +74,7 @@ namespace Fonts {
 			c->h = bitmap.rows;
 			c->bearing_x = glyph->bitmap_left;
 			c->bearing_y = glyph->bitmap_top;
-			c->advance = glyph->advance.x;
+			c->advance = glyph->advance.x * 64;
 			buffer->stride = bitmap.pitch;
 
 			int buffer_bytes = bitmap.pitch * bitmap.rows;
@@ -174,7 +173,7 @@ namespace Fonts {
 		}
 	}
 
-	FontPacking create_packing(FontConstructionInfo* info) {
+	FontPacking create_packing(ConstructInfo* info) {
 		int atlas_size = 64;
 		FontPacking packing;
 		packing.root = alloc_and_init_node(atlas_size, atlas_size, 0, 0);
@@ -199,7 +198,7 @@ namespace Fonts {
 		return packing;
 	}
 
-	unsigned char* rasterize_packing(FontPacking packing, FontConstructionInfo* info) {
+	unsigned char* rasterize_packing(FontPacking packing, ConstructInfo* info) {
 		int dim = packing.size;
 		unsigned char* pixels = (unsigned char*)calloc(dim * dim, sizeof(unsigned char));
 
@@ -264,32 +263,17 @@ namespace Fonts {
 		return tex;
 	}
 
-	FontHandle create_font(FontManager* manager, char* font_file, int point_size) {
-		FontConstructionInfo* info = create_font_textures(font_file, point_size);
+	void from_file(Font* out, char* font_file, int point_size) {
+		ConstructInfo* info = create_font_textures(out, font_file, point_size);
 		FontPacking packing = create_packing(info);
 		unsigned char* pixels = rasterize_packing(packing, info);
 		GLuint tex = publish_to_gpu(pixels, packing.size);
 
-		int handle = manager->count;
-		manager->count++;
-		manager->fonts[handle] = *info->font;
-
-		info->font->tex = tex;
 		free(info);
 		free_tree(packing.root);
 		free(pixels);
 
-		return handle;
-	}
-
-
-	unsigned int tex_handle_for_font(FontManager* manager, FontHandle handle) {
-		return manager->fonts[handle].tex;
-	}
-
-	FontManager* init_fonts() {
-		FontManager* fonts = (FontManager*)malloc(sizeof(FontManager));
-		fonts->count = 0;
-		return fonts;
+		out = info->font;
+		out->tex = tex;
 	}
 }

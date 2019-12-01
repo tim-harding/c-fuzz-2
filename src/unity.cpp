@@ -1,5 +1,5 @@
 #include "main.cpp"
-#include "font.cpp"
+#include "fonts.cpp"
 #include "rendering.cpp"
 #include "shader.cpp"
 #include "window.cpp"

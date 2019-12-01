@@ -6,7 +6,7 @@ namespace Fonts {
 	const char ASCII_CHAR_COUNT = ASCII_END - ASCII_START;
 
 	struct Character {
-    	// x distance from character origin to next character in 1/64 pixels
+    	// x pixels from character origin to next character
 		long advance;
 
     	// In pixels
@@ -24,16 +24,5 @@ namespace Fonts {
 		Character characters[ASCII_CHAR_COUNT];
 	};
 
-	// Get rid of this and just use the allocator
-	const int MAX_FONTS = 1 << 4;
-	struct FontManager {
-		int count = 0;
-		Font fonts[MAX_FONTS];
-	};
-
-	typedef unsigned int FontHandle;
-
-	FontManager* init_fonts();
-	FontHandle create_font(FontManager* manager, char* font_file, int point_size);
-	unsigned int tex_handle_for_font(FontManager* manager, FontHandle handle);
+	void from_file(Font* out, char* font_file, int point_size);
 }

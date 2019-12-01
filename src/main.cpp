@@ -1,4 +1,4 @@
-#include "font.h"
+#include "fonts.h"
 #include "shader.h"
 #include "window.h"
 #include "rendering.h"
@@ -11,14 +11,21 @@
 // TODO: 
 // - Materials, dealing with attributes and uniforms
 
+
 int main(int argc, char** argv) {
+	const int ALLOC_SIZE = 1 << 16;
+	void* block = malloc(ALLOC_SIZE);
+	gbArena arena = {0};
+	gb_arena_init_from_memory(&arena, block, ALLOC_SIZE);
+	gbAllocator allocator = gb_arena_allocator(&arena);
+
 	Window::Handle window = Window::init_window();
 	if (!window) {
 		return -1;
 	}
 
-	Fonts::FontManager* fonts = Fonts::init_fonts();
-	Fonts::FontHandle cascadia = Fonts::create_font(fonts, "fonts/cascadia.ttf", 36);	
+	Fonts::Font* font = gb_alloc_item(allocator, Fonts::Font);
+	Fonts::from_file(font, "fonts/cascadia.ttf", 36);
 
 	Shader::Manager* shader_manager = Shader::init_shader_manager();
 	Shader::Id vtx = Shader::shader_from_source(shader_manager, "shaders/tri_test_vtx.glsl", GL_VERTEX_SHADER);
@@ -34,7 +41,7 @@ int main(int argc, char** argv) {
 		Window::begin_frame(window);
 
 		Shader::hotreload_all_shaders(shader_manager);
-		glBindTexture(GL_TEXTURE_2D, tex_handle_for_font(fonts, cascadia));
+		glBindTexture(GL_TEXTURE_2D, font->tex);
 		glClearColor(0.2f, 0.3f, 0.3f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		Shader::GlHandle shader = Shader::handle_for_program(shader_manager, program);
