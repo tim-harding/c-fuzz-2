@@ -139,7 +139,7 @@ void free_tree(Node* node) {
 }
 
 bool insert_recursive(Node* node, Character* c, char ascii) {
-	bool is_leaf = node->children[0] == nullptr;
+	bool is_leaf = node->ascii < 0;
 	if (is_leaf) {
 		bool fits = c->w < node->w && c->h < node->h;
 		if (!fits) {
@@ -160,7 +160,7 @@ bool insert_recursive(Node* node, Character* c, char ascii) {
 				int h = node->h - c->h;
 				int x = node->x;
 				int y = node->y + c->h;
-				left  = alloc_and_init_node(w, h, x, y);
+				left = alloc_and_init_node(w, h, x, y);
 			}
 			{
 				int w = node->w - c->w;
@@ -172,18 +172,18 @@ bool insert_recursive(Node* node, Character* c, char ascii) {
 		} else {
 			// Vertical split
 			{
-				int w = node->w;
+				int w = node->w - c->w;
 				int h = c->h;
 				int x = node->x + c->w;
 				int y = node->y;
-				left  = alloc_and_init_node(w, h, x, y);
+				left = alloc_and_init_node(w, h, x, y);
 			}
 			{
 				int w = node->w;
 				int h = node->h - c->h;
 				int x = node->x;
 				int y = node->y + c->h;
-				left  = alloc_and_init_node(w, h, x, y);
+				right = alloc_and_init_node(w, h, x, y);
 			}
 		}
 
