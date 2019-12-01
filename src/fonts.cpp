@@ -249,16 +249,16 @@ namespace Fonts {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		glTexImage2D(
-				GL_TEXTURE_2D,
-				0,
-				GL_RED,
-				dim,
-				dim,
-				0, 
-				GL_RED,
-				GL_UNSIGNED_BYTE,
-				pixels
-				);
+			GL_TEXTURE_2D,
+			0,
+			GL_RED,
+			dim,
+			dim,
+			0, 
+			GL_RED,
+			GL_UNSIGNED_BYTE,
+			pixels
+		);
 
 		return tex;
 	}
