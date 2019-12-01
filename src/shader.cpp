@@ -1,4 +1,10 @@
 #include "shader.h"
+#include <sys/stat.h>
+#include <cstdint>
+#include <stdio.h>
+#include <stdlib.h>
+#include <glad/glad.h>
+#include <cstring>
 
 
 const int BUFFER_SIZE = 1 << 16;

@@ -1,4 +1,7 @@
 #include "window.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <stdio.h>
 
 
 const int WIDTH = 800;
@@ -11,9 +14,10 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
 
 void begin_frame(Window window) {
+	GLFWwindow* handle = (GLFWwindow*)window;
     // Process input
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-		glfwSetWindowShouldClose(window, true);
+	if (glfwGetKey(handle, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+		glfwSetWindowShouldClose(handle, true);
 	}
 }
 
@@ -57,22 +61,25 @@ Window init_window()
 	glViewport(0, 0, WIDTH, HEIGHT);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	return window;
+	return (void*)window;
 }
 
 
 void end_frame(Window window) {
-    glfwSwapBuffers(window);
+	GLFWwindow* handle = (GLFWwindow*)window;
+    glfwSwapBuffers(handle);
     glfwPollEvents();
 }
 
 
 bool should_close(Window window) {
-    return glfwWindowShouldClose(window);
+	GLFWwindow* handle = (GLFWwindow*)window;
+    return glfwWindowShouldClose(handle);
 }
 
 
 void free_window(Window window) {
-	glfwDestroyWindow(window);
+	GLFWwindow* handle = (GLFWwindow*)window;
+	glfwDestroyWindow(handle);
 	glfwTerminate();
 }

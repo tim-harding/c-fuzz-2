@@ -1,8 +1,14 @@
 #include "rendering.h"
+#include <cstring>
+#include <stdint.h>
+#include <stdlib.h>
+#include <glad/glad.h>
 
 const int MAX_MESHES = 256;
 
 struct Mesh {
+	GLuint vao;
+
     GLuint vertex_count;
     float* vertices;
 
@@ -65,18 +71,18 @@ void populate_quad_mesh(MeshManager* manager, MeshID id) {
 }
 
 
-void draw_mesh(MeshDrawInfo info, GLuint shader_program) {
+void draw_mesh(MeshManager* manager, MeshID id, GLuint shader_program) {
+	Mesh mesh = manager->meshes[id];
     glUseProgram(shader_program);
-    glBindVertexArray(info.vao);
-    glDrawElements(GL_TRIANGLES, info.element_count, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(mesh.vao);
+    glDrawElements(GL_TRIANGLES, mesh.index_count, GL_UNSIGNED_INT, 0);
 }
 
 
-MeshDrawInfo prepare_mesh_for_drawing(MeshManager* manager, MeshID id) {
+void prepare_mesh_for_drawing(MeshManager* manager, MeshID id) {
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
-
 
     GLuint vbo;
     glGenBuffers(1, &vbo);
@@ -98,8 +104,5 @@ MeshDrawInfo prepare_mesh_for_drawing(MeshManager* manager, MeshID id) {
     glVertexAttribPointer(uv_a, 2, GL_FLOAT, false, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(uv_a);
 
-    MeshDrawInfo info;
-    info.vao = vao;
-    info.element_count = mesh.index_count;
-    return info;
+    mesh.vao = vao;
 }

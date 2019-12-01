@@ -3,16 +3,13 @@
 #include "window.h"
 #include "rendering.h"
 
+#define GB_IMPLEMENTATION
+#include "gb.h"
 
-// TODO: Adding proper UVs to our texture should probably be the next
-// step for this. Using NDC coordinates won't work for much longer. That,
-// and we're also going to want a temp allocator for vertex data, since
-// we'll be changing it so often with text rendering. 
-//
-// It will also be good to improve the shader system so we can fetch
-// uniform and attribute locations by name, as well as prepare materials
-// based on those shaders. 
+#include <glad/glad.h>
 
+// TODO: 
+// - Materials, dealing with attributes and uniforms
 
 int main(int argc, char** argv) {
 	Window window = init_window();
@@ -31,7 +28,7 @@ int main(int argc, char** argv) {
 	MeshManager* mesh_manager = init_mesh_manager();
 	MeshID mesh = next_mesh(mesh_manager);
 	populate_quad_mesh(mesh_manager, mesh);
-	MeshDrawInfo info = prepare_mesh_for_drawing(mesh_manager, mesh);
+	prepare_mesh_for_drawing(mesh_manager, mesh);
 
 	while (!should_close(window)) {
 		begin_frame(window);
@@ -40,7 +37,8 @@ int main(int argc, char** argv) {
 		glBindTexture(GL_TEXTURE_2D, tex_handle_for_font(fonts, cascadia));
 		glClearColor(0.2f, 0.3f, 0.3f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT);
-		draw_mesh(info, handle_for_program(shader_manager, program));
+		GLuint shader = handle_for_program(shader_manager, program);
+		draw_mesh(mesh_manager, mesh, shader);
 
 		end_frame(window);
 	}
