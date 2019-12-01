@@ -2,8 +2,7 @@
 @pushd D:\19\11\c-fuzz-2\build
 
 cl /Zi /EHsc /MT ^
-	..\src\*.cpp ^
-	..\libraries\glad\src\glad.obj ^
+	..\src\unity.cpp ^
 	D:\static\vcpkg\installed\x64-windows\lib\glfw3dll.lib ^
 	D:\static\vcpkg\installed\x64-windows\lib\freetype.lib ^
 	/I ..\libraries\glad\include ^

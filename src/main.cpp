@@ -6,46 +6,46 @@
 #define GB_IMPLEMENTATION
 #include "gb.h"
 
-#include <glad/glad.h>
+#include "glad/glad.h"
 
 // TODO: 
 // - Materials, dealing with attributes and uniforms
 
 int main(int argc, char** argv) {
-	Window window = init_window();
+	Window::Handle window = Window::init_window();
 	if (!window) {
 		return -1;
 	}
 
-	Fonts* fonts = init_fonts();
-	FontHandle cascadia = create_font(fonts, "fonts/cascadia.ttf", 36);	
+	Fonts::FontManager* fonts = Fonts::init_fonts();
+	Fonts::FontHandle cascadia = Fonts::create_font(fonts, "fonts/cascadia.ttf", 36);	
 
-	ShaderManager* shader_manager = init_shader_manager();
-	ShaderID vtx = shader_from_source(shader_manager, "shaders/tri_test_vtx.glsl", GL_VERTEX_SHADER);
-	ShaderID frg = shader_from_source(shader_manager, "shaders/tri_test_frg.glsl", GL_FRAGMENT_SHADER);
-	ShaderID program = link_program(shader_manager, vtx, frg);
+	Shader::Manager* shader_manager = Shader::init_shader_manager();
+	Shader::Id vtx = Shader::shader_from_source(shader_manager, "shaders/tri_test_vtx.glsl", GL_VERTEX_SHADER);
+	Shader::Id frg = Shader::shader_from_source(shader_manager, "shaders/tri_test_frg.glsl", GL_FRAGMENT_SHADER);
+	Shader::Id program = Shader::link_program(shader_manager, vtx, frg);
 
-	MeshManager* mesh_manager = init_mesh_manager();
-	MeshID mesh = next_mesh(mesh_manager);
-	populate_quad_mesh(mesh_manager, mesh);
-	prepare_mesh_for_drawing(mesh_manager, mesh);
+	Rendering::MeshManager* mesh_manager = Rendering::init_mesh_manager();
+	Rendering::MeshID mesh = Rendering::next_mesh(mesh_manager);
+	Rendering::populate_quad_mesh(mesh_manager, mesh);
+	Rendering::prepare_mesh_for_drawing(mesh_manager, mesh);
 
-	while (!should_close(window)) {
-		begin_frame(window);
+	while (!Window::should_close(window)) {
+		Window::begin_frame(window);
 
-		hotreload_all_shaders(shader_manager);
+		Shader::hotreload_all_shaders(shader_manager);
 		glBindTexture(GL_TEXTURE_2D, tex_handle_for_font(fonts, cascadia));
 		glClearColor(0.2f, 0.3f, 0.3f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT);
-		GLuint shader = handle_for_program(shader_manager, program);
-		draw_mesh(mesh_manager, mesh, shader);
+		Shader::GlHandle shader = Shader::handle_for_program(shader_manager, program);
+		Rendering::draw_mesh(mesh_manager, mesh, shader);
 
-		end_frame(window);
+		Window::end_frame(window);
 	}
 
-	free_shader_manager(shader_manager);
-	free_window(window);
-	free_mesh_manager(mesh_manager);
+	Shader::free_shader_manager(shader_manager);
+	Window::free(window);
+	Rendering::free_mesh_manager(mesh_manager);
 
 	return 0;
 }

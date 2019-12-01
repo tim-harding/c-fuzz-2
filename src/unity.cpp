@@ -1,0 +1,6 @@
+#include "main.cpp"
+#include "font.cpp"
+#include "rendering.cpp"
+#include "shader.cpp"
+#include "window.cpp"
+#include "glad/glad.c"
