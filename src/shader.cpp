@@ -70,6 +70,7 @@ bool source_shader(GLuint shader, const char* filename) {
 		return false;
 	}
 
+	// TODO: This buffer only needs to be allocated once
 	char* buffer = (char*)malloc(BUFFER_SIZE * sizeof(char*));
 	size_t bytes_read = fread(buffer, sizeof(char), BUFFER_SIZE, file);
 	if (bytes_read == BUFFER_SIZE) {
