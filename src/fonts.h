@@ -1,4 +1,5 @@
 #pragma once
+#include "memory.h"
 
 namespace Fonts {
 	const char ASCII_START = 32; // Space
@@ -24,5 +25,5 @@ namespace Fonts {
 		Character characters[ASCII_CHAR_COUNT];
 	};
 
-	void from_file(Font* out, char* font_file, int point_size);
+	Font* from_file(Memory::Storage storage, char* font_file, int point_size);
 }

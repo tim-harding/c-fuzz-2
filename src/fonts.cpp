@@ -29,13 +29,13 @@ namespace Fonts {
 		CharacterBuffer buffers[ASCII_CHAR_COUNT];
 	};
 
-	ConstructInfo* create_font_construction_info(Font* font) {
-		ConstructInfo* info = (ConstructInfo*)malloc(sizeof(ConstructInfo));
+	ConstructInfo* create_font_construction_info(Memory::Storage storage, Font* font) {
+		ConstructInfo* info = gb_alloc_item(storage.scratch, ConstructInfo);
 		info->font = font;
 		return info;
 	}
 
-	ConstructInfo* create_font_textures(Font* font, char* font_file, int point_size) {
+	ConstructInfo* create_font_textures(Memory::Storage storage, char* font_file, int point_size) {
 		FT_Library ft;
 		int failure = FT_Init_FreeType(&ft);
 		if (failure) {
@@ -54,7 +54,8 @@ namespace Fonts {
 		// Width calculated dynamically
 		FT_Set_Pixel_Sizes(face, 0, point_size);
 
-		ConstructInfo* info = create_font_construction_info(font);
+		Font* font = gb_alloc_item(storage.permanent, Font);
+		ConstructInfo* info = create_font_construction_info(storage, font);
 		for (int i = 0; i < ASCII_CHAR_COUNT; i++) {
 			char ascii = i + ASCII_START;
 			failure = FT_Load_Char(face, ascii, FT_LOAD_RENDER);
@@ -78,7 +79,7 @@ namespace Fonts {
 			buffer->stride = bitmap.pitch;
 
 			int buffer_bytes = bitmap.pitch * bitmap.rows;
-			buffer->data = (unsigned char*)malloc(buffer_bytes);
+			buffer->data = gb_alloc_array(storage.scratch, unsigned char, buffer_bytes);
 			memcpy(buffer->data, bitmap.buffer, buffer_bytes);
 		}
 
@@ -89,8 +90,8 @@ namespace Fonts {
 	}
 
 
-	Node* alloc_and_init_node(int w, int h, int x, int y) {
-		Node* node = (Node*)malloc(sizeof(Node));
+	Node* alloc_and_init_node(Memory::Storage storage, int w, int h, int x, int y) {
+		Node* node = gb_alloc_item(storage.scratch, Node);
 		node->x = x;
 		node->y = y;
 		node->w = w;
@@ -101,17 +102,7 @@ namespace Fonts {
 		return node;
 	}
 
-	void free_tree(Node* node) {
-		for (int i = 0; i < 2; i++) {
-			Node* child = node->children[i];
-			if (child != nullptr) {
-				free_tree(child);
-			}
-			free(child);
-		}
-	}
-
-	bool insert_recursive(Node* node, Character* c, char ascii) {
+	bool insert_recursive(Memory::Storage storage, Node* node, Character* c, char ascii) {
 		bool is_leaf = node->ascii < 0;
 		if (is_leaf) {
 			bool fits = c->w < node->w && c->h < node->h;
@@ -133,14 +124,14 @@ namespace Fonts {
 					int h = node->h - c->h;
 					int x = node->x;
 					int y = node->y + c->h;
-					left = alloc_and_init_node(w, h, x, y);
+					left = alloc_and_init_node(storage, w, h, x, y);
 				}
 				{
 					int w = node->w - c->w;
 					int h = node->h;
 					int x = node->x + c->w;
 					int y = node->y;
-					right = alloc_and_init_node(w, h, x, y);
+					right = alloc_and_init_node(storage, w, h, x, y);
 				}
 			} else {
 				// Vertical split
@@ -149,14 +140,14 @@ namespace Fonts {
 					int h = c->h;
 					int x = node->x + c->w;
 					int y = node->y;
-					left = alloc_and_init_node(w, h, x, y);
+					left = alloc_and_init_node(storage, w, h, x, y);
 				}
 				{
 					int w = node->w;
 					int h = node->h - c->h;
 					int x = node->x;
 					int y = node->y + c->h;
-					right = alloc_and_init_node(w, h, x, y);
+					right = alloc_and_init_node(storage, w, h, x, y);
 				}
 			}
 
@@ -168,29 +159,24 @@ namespace Fonts {
 
 			return true;
 		} else {
-			return insert_recursive(node->children[0], c, ascii) ||
-			   	insert_recursive(node->children[1], c, ascii);
+			return insert_recursive(storage, node->children[0], c, ascii) ||
+			   	insert_recursive(storage, node->children[1], c, ascii);
 		}
 	}
 
-	FontPacking create_packing(ConstructInfo* info) {
+	FontPacking create_packing(Memory::Storage storage, ConstructInfo* info) {
 		int atlas_size = 64;
 		FontPacking packing;
-		packing.root = alloc_and_init_node(atlas_size, atlas_size, 0, 0);
+		packing.root = alloc_and_init_node(storage, atlas_size, atlas_size, 0, 0);
 
 		for (int i = 0; i < ASCII_CHAR_COUNT; i++) {
 			Character* c = &info->font->characters[i];
 			char ascii = i + ASCII_START;
-			if (!insert_recursive(packing.root, c, ascii)) {
+			if (!insert_recursive(storage, packing.root, c, ascii)) {
 				// Grow atlas and retry
 				atlas_size *= 2;
 				i = 0;
-
-				// TODO:We could also just modify the existing nodes instead of 
-				// recreating the tree from scratch, but this is easier 
-				// to start with. 
-				free_tree(packing.root);
-				packing.root = alloc_and_init_node(atlas_size, atlas_size, 0, 0);
+				packing.root = alloc_and_init_node(storage, atlas_size, atlas_size, 0, 0);
 			}
 		}
 
@@ -198,9 +184,9 @@ namespace Fonts {
 		return packing;
 	}
 
-	unsigned char* rasterize_packing(FontPacking packing, ConstructInfo* info) {
+	unsigned char* rasterize_packing(Memory::Storage storage, FontPacking packing, ConstructInfo* info) {
 		int dim = packing.size;
-		unsigned char* pixels = (unsigned char*)calloc(dim * dim, sizeof(unsigned char));
+		unsigned char* pixels = gb_alloc_array(storage.scratch, unsigned char, dim * dim);
 
 		Node* node_stack[256];
 		node_stack[0] = packing.root;
@@ -263,17 +249,15 @@ namespace Fonts {
 		return tex;
 	}
 
-	void from_file(Font* out, char* font_file, int point_size) {
-		ConstructInfo* info = create_font_textures(out, font_file, point_size);
-		FontPacking packing = create_packing(info);
-		unsigned char* pixels = rasterize_packing(packing, info);
+	Font* from_file(Memory::Storage storage, char* font_file, int point_size) {
+		ConstructInfo* info = create_font_textures(storage, font_file, point_size);
+		FontPacking packing = create_packing(storage, info);
+		unsigned char* pixels = rasterize_packing(storage, packing, info);
 		GLuint tex = publish_to_gpu(pixels, packing.size);
 
-		free(info);
-		free_tree(packing.root);
-		free(pixels);
-
-		out = info->font;
-		out->tex = tex;
+		Font* font = info->font;
+		font->tex = tex;
+		gb_free_all(storage.scratch);
+		return font;
 	}
 }
