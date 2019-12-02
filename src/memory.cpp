@@ -16,6 +16,16 @@ namespace Memory {
 		return storage;
 	}
 
+	void free_allocator(gbAllocator allocator) {
+		gbArena* arena = (gbArena*)allocator.data;
+		free(arena->physical_start);
+	}
+
+	void free_storage(Storage storage) {
+		free_allocator(storage.permanent);
+		free_allocator(storage.scratch);
+	}
+
 	inline int kilobytes(int bytes) {
 		return bytes * 1024;
 	}

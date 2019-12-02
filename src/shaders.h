@@ -13,5 +13,4 @@ namespace Shaders {
 	Id link_program(Handle handle, Id vtx, Id frg);
 	GlHandle handle_for_program(Handle handle, Id id);
 	void hotreload(Handle handle);
-	void free(Handle handle);
 }

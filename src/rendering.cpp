@@ -4,30 +4,17 @@
 #include <stdlib.h>
 #include "glad/glad.h"
 
+// TODO: remove malloc and free calls
+
 namespace Rendering {
-	MeshManager* init_mesh_manager() {
-    	MeshManager* manager = (MeshManager*)malloc(sizeof(MeshManager));
-    	manager->count = 0;
-    	return manager;
+	Mesh* create_mesh(Memory::Storage storage) {
+		Mesh* mesh = gb_alloc_item(storage.permanent, Mesh);
+		gb_array_init(mesh->vertices, storage.permanent);
+		gb_array_init(mesh->indices, storage.permanent);
+		return mesh;
 	}
 
-
-	void free_mesh_manager(MeshManager* manager) {
-    	for (int i = 0, count = manager->count; i < count; i++) {
-        	Mesh mesh = manager->meshes[i];
-        	free(mesh.indices);
-        	free(mesh.vertices);
-    	}
-    	free(manager);
-	}
-
-
-	MeshID next_mesh(MeshManager* manager) {
-    	return manager->count++;
-	}
-
-
-	void populate_quad_mesh(MeshManager* manager, MeshID id) {
+	void populate_quad_mesh(Memory::Storage storage, Mesh* mesh) {
     	float vertices[] = {
       		// World coords      UV coords
          	0.5f,  0.5f,      1.f, 1.f,
@@ -41,27 +28,25 @@ namespace Rendering {
         	1, 2, 3   
     	};
 
-    	Mesh& mesh = manager->meshes[id];
+    	int vertex_count = sizeof(vertices) / sizeof(float);
+    	gb_array_resize(mesh->vertices, vertex_count);
+    	memcpy(mesh->vertices, vertices, sizeof(vertices));
 
-    	mesh.vertex_count = sizeof(vertices) / sizeof(float);
-    	mesh.vertices = (float*)malloc(sizeof(vertices));
-    	memcpy(mesh.vertices, vertices, sizeof(vertices));
-
-    	mesh.index_count = sizeof(indices) / sizeof(GLuint);
-    	mesh.indices = (GLuint*)malloc(sizeof(indices)); 
-    	memcpy(mesh.indices, indices, sizeof(indices));
+    	int index_count = sizeof(indices) / sizeof(GLuint);
+    	gb_array_resize(mesh->indices, index_count);
+    	memcpy(mesh->indices, indices, sizeof(indices));
 	}
 
 
-	void draw_mesh(MeshManager* manager, MeshID id, GLuint shader_program) {
-		Mesh mesh = manager->meshes[id];
+	void draw_mesh(Mesh* mesh, GLuint shader_program) {
     	glUseProgram(shader_program);
-    	glBindVertexArray(mesh.vao);
-    	glDrawElements(GL_TRIANGLES, mesh.index_count, GL_UNSIGNED_INT, 0);
+    	glBindVertexArray(mesh->vao);
+    	int count = gb_array_count(mesh->indices);
+    	glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, 0);
 	}
 
 
-	void prepare_mesh_for_drawing(MeshManager* manager, MeshID id) {
+	void prepare_mesh_for_drawing(Mesh* mesh) {
     	GLuint vao;
     	glGenVertexArrays(1, &vao);
     	glBindVertexArray(vao);
@@ -69,14 +54,15 @@ namespace Rendering {
     	GLuint vbo;
     	glGenBuffers(1, &vbo);
     	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    	Mesh& mesh = manager->meshes[id];
     	// TODO: Only allows for a single vertex attribute at the moment. 
-    	glBufferData(GL_ARRAY_BUFFER, mesh.vertex_count * sizeof(float), mesh.vertices, GL_STATIC_DRAW);
+    	int vertex_count = gb_array_count(mesh->vertices);
+    	glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(float), mesh->vertices, GL_STATIC_DRAW);
 
     	GLuint ebo;
     	glGenBuffers(1, &ebo);
     	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.index_count * sizeof(GLuint), mesh.indices, GL_STATIC_DRAW);
+    	int index_count = gb_array_count(mesh->indices);
+    	glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(GLuint), mesh->indices, GL_STATIC_DRAW);
 
 		// should use glgetattriblocation
 		const int pos_a = 0;
@@ -86,6 +72,6 @@ namespace Rendering {
     	glVertexAttribPointer(uv_a, 2, GL_FLOAT, false, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     	glEnableVertexAttribArray(uv_a);
 
-    	mesh.vao = vao;
+    	mesh->vao = vao;
 	}
 }

@@ -30,10 +30,9 @@ int main(int argc, char** argv) {
 	Shaders::Id frg = Shaders::stage_from_source(shaders, "shaders/tri_test_frg.glsl", GL_FRAGMENT_SHADER);
 	Shaders::Id program = Shaders::link_program(shaders, vtx, frg);
 
-	Rendering::MeshManager* mesh_manager = Rendering::init_mesh_manager();
-	Rendering::MeshID mesh = Rendering::next_mesh(mesh_manager);
-	Rendering::populate_quad_mesh(mesh_manager, mesh);
-	Rendering::prepare_mesh_for_drawing(mesh_manager, mesh);
+	Rendering::Mesh* mesh = Rendering::create_mesh(storage);
+	Rendering::populate_quad_mesh(storage, mesh);
+	Rendering::prepare_mesh_for_drawing(mesh);
 
 	while (!Window::should_close(window)) {
 		Window::begin_frame(window);
@@ -43,14 +42,13 @@ int main(int argc, char** argv) {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		Shaders::GlHandle shader = Shaders::handle_for_program(shaders, program);
-		Rendering::draw_mesh(mesh_manager, mesh, shader);
+		Rendering::draw_mesh(mesh, shader);
 
 		Window::end_frame(window);
 	}
 
-	Shaders::free(shaders);
-	Window::free(window);
-	Rendering::free_mesh_manager(mesh_manager);
+	Window::free_window(window);
+	Memory::free_storage(storage);
 
 	return 0;
 }

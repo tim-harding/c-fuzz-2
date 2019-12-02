@@ -10,7 +10,7 @@ namespace Window {
 	using Handle = void*;
 
 	Handle init();
-	void free(Handle window);
+	void free_window(Handle window);
 	bool should_close(Handle window);
 	void begin_frame(Handle window);
 	void end_frame(Handle window);

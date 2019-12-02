@@ -72,7 +72,7 @@ namespace Window {
 	}
 
 
-	void free(Handle window) {
+	void free_window(Handle window) {
 		GLFWwindow* handle = (GLFWwindow*)window;
 		glfwDestroyWindow(handle);
 		glfwTerminate();

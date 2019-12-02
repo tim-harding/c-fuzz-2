@@ -9,6 +9,7 @@ namespace Memory {
 	};
 
 	Storage init(int permanent_size, int scratch_size);
+	void free_storage(Storage storage);
 
 	inline int kilobytes(int bytes);
 	inline int megabytes(int kilos);

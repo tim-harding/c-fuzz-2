@@ -161,22 +161,6 @@ namespace Shaders {
     	}
 	}
 
-
-	void free(Handle handle) {
-		Manager* manager = (Manager*)handle;
-		int shader_count = gb_array_count(manager->stages);
-    	for (int i = 0; i < shader_count; i++) {
-        	Stage* stage = manager->stages[i];
-        	glDeleteShader(stage->handle);
-    	}
-
-		int program_count = gb_array_count(manager->programs);
-    	for (int i = 0; i < program_count; i++) {
-        	Program* program = manager->programs[i];
-        	glDeleteProgram(program->handle);
-    	}
-	}
-
 	GlHandle handle_for_program(Handle handle, Id id) {
 		Manager* manager = (Manager*)handle;
 		Program* program = manager->programs[id];
