@@ -75,7 +75,7 @@ namespace Fonts {
 			c->h = bitmap.rows;
 			c->bearing_x = glyph->bitmap_left;
 			c->bearing_y = glyph->bitmap_top;
-			c->advance = glyph->advance.x * 64;
+			c->advance = glyph->advance.x / 64;
 			buffer->stride = bitmap.pitch;
 
 			int buffer_bytes = bitmap.pitch * bitmap.rows;
